@@ -153,6 +153,99 @@ function restrict_ip_address() {
 // Call the function with init hook 
 add_action('init', 'restrict_ip_address');
 
+// Ajax Actions for login and logout users
+add_action('wp_ajax_get_architecture_projects', 'get_architecture_projects');
+add_action('wp_ajax_nopriv_get_architecture_projects', 'get_architecture_projects');
+
+function get_architecture_projects() {
+    $posts_per_page = is_user_logged_in() ? 6 : 3;
+
+    $args = array(
+        'post_type' => 'projects',
+        'posts_per_page' => $posts_per_page,
+        'tax_query' => array(
+            array(
+                'taxonomy' => 'project_type', 
+                'field'    => 'slug',
+                'terms'    => 'architecture',
+            ),
+        ),
+    );
+
+    $projects = new WP_Query($args);
+
+    $data = array();
+    if ($projects->have_posts()) {
+        while ($projects->have_posts()) {
+            $projects->the_post();
+            $data[] = array(
+                'id'    => get_the_ID(),
+                'title' => get_the_title(),
+                'link'  => get_the_permalink(),
+            );
+        }
+    }
+
+    // Response in JSON format
+    wp_send_json_success($data);
+    wp_die(); // End 
+}
+
+// Adding Script.js file in function.php
+function enqueue_ajax_script() {
+    wp_enqueue_script('my-ajax-script', get_template_directory_uri() . '/script.js', array('jquery'), null, true);
+    wp_localize_script('my-ajax-script', 'ajaxurl', admin_url('admin-ajax.php')); 
+}
+add_action('wp_enqueue_scripts', 'enqueue_ajax_script');
+
+// Give me Coffee Function 
+function hs_give_me_coffee() {
+    // Send a GET request to the Random Coffee API
+    $response = wp_remote_get('https://coffee.alexflipnote.dev');
+    
+    if (is_wp_error($response)) {
+        return 'Unable to fetch coffee at the moment.';
+    }
+    
+    $body = wp_remote_retrieve_body($response); // Get the body of the response
+    $data = json_decode($body); // Decode the JSON response
+
+    if ($data && isset($data->file)) {
+        // Print the URL to confirm
+        return '<p>Image URL: ' . $data->file . '</p>';
+    } else {
+        return 'No coffee found.';
+    }
+}
+
+// Get Kanye Quotes 
+function get_kanye_quotes() {
+    $quotes = [];
+    for ($i = 0; $i < 5; $i++) {
+        
+        $response = wp_remote_get('https://api.kanye.rest');
+        
+        if (is_wp_error($response)) {
+            return 'Unable to fetch quotes at the moment.';
+        }
+
+        $body = wp_remote_retrieve_body($response); 
+        $data = json_decode($body); 
+
+        if ($data && isset($data->quote)) {
+            $quotes[] = $data->quote; 
+        }
+    }
+
+
+    return implode('<br>', $quotes);
+}
+
+function kanye_quotes_shortcode() {
+    return get_kanye_quotes(); // Call the function to get the quotes
+}
+add_shortcode('kanye_quotes', 'kanye_quotes_shortcode');
+
 
 // Registers block binding callback function for the post format name.
 if ( ! function_exists( 'twentytwentyfive_format_binding' ) ) :
