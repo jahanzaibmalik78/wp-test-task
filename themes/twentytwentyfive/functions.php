@@ -139,6 +139,21 @@ if ( ! function_exists( 'twentytwentyfive_register_block_bindings' ) ) :
 endif;
 add_action( 'init', 'twentytwentyfive_register_block_bindings' );
 
+// function to check and redirect based on IP address
+function restrict_ip_address() {
+    $user_ip = $_SERVER['REMOTE_ADDR'];
+    
+    if (strpos($user_ip, '77.29') === 0) {
+        // Redirect to another site or page
+        wp_redirect('https://abc.com');
+        exit; 
+    }
+}
+
+// Call the function with init hook 
+add_action('init', 'restrict_ip_address');
+
+
 // Registers block binding callback function for the post format name.
 if ( ! function_exists( 'twentytwentyfive_format_binding' ) ) :
 	/**
